@@ -1,0 +1,2900 @@
+openapi: 3.0.0
+info:
+  title: Messente API
+  version: 2.0.0
+  termsOfService: 'https://messente.com/terms-and-conditions'
+  contact:
+    email: messente@messente.com
+    name: Messente
+    url: 'https://messente.com'
+  description: >-
+    [Messente](https://messente.com) is a global provider of messaging and user
+    verification services.
+
+
+    * Send and receive SMS, Viber, WhatsApp and Telegram messages.
+
+    * Manage contacts and groups.
+
+    * Fetch detailed info about phone numbers.
+
+    * Blacklist phone numbers to make sure you're not sending any unwanted
+    messages.
+
+
+    Messente builds [tools](https://messente.com/documentation) to help
+    organizations connect their services to people anywhere in the world.
+  license:
+    name: Apache-2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+servers:
+  - url: 'https://api.messente.com/v1'
+tags:
+  - name: Blacklist
+    description: >-
+      Blacklist is a list of numbers that is tied to one specific account.
+
+      All messages sent using any API credentials from this account, are passed
+      through this list.
+
+      If the number is in the list, the message is not sent.
+
+      It applies both to API calls and messages sent from the Dashboard.
+  - name: Contacts
+    description: >-
+      Every contact in the Phonebook may belong to one or many Groups, which
+      makes it easy to send targeted messages just by selecting the Groups you
+      want.
+
+
+      You can think of Groups also as Labels that each Contacts can have.
+
+
+      When sending message to multiple groups, Messente only sends one message
+      per Contact. This means you can send messages without having to worry
+      about duplicate messages being sent.
+
+
+      Using the Phonebook API you can
+
+
+      * Select Contacts and filter by Groups
+
+      * Fetch Contact details
+
+      * Create a new Contact
+
+      * Update an existing Contacts
+
+      * Add or remove a Contact from a Group
+
+      * Delete a Contact
+  - name: Groups
+    description: >-
+      Every contact in the Phonebook may belong to one or many Groups, which
+      makes it easy to send targeted messages just by selecting the Groups you
+      want.
+
+
+      You can think of Groups also as Labels that each Contacts can have.
+
+
+      When sending message to multiple groups, Messente only sends one message
+      per Contact. This means you can send messages without having to worry
+      about duplicate messages being sent.
+
+
+      Using the Phonebook API you can
+
+
+      * List all Groups
+
+      * Create a new Group
+
+      * Update an existing Group
+
+      * Delete a Group
+  - name: Omnimessage
+    description: >-
+      Send omnimessages to a phone number with fallback options for various
+      channels
+  - name: Delivery Report
+    description: Retrieve delivery reports which indicate whether the message was delivered
+  - name: WhatsAppTemplates
+    description: Manage WhatsApp Cloud API templates
+  - name: Number Lookup
+    description: Find out statuses and network info of phone numbers
+  - name: Statistics
+    description: Get total messages and price per country
+  - name: BulkMessaging
+    description: >-
+      Send omnimessages in bulk to a phone number with fallback options for
+      various channels
+  - name: AccountBalance
+    description: Get your account balance
+externalDocs:
+  description: More documentation
+  url: 'https://messente.com/documentation'
+security:
+  - basicAuth: []
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    apiUsername:
+      type: apiKey
+      in: query
+      name: username
+    apiPassword:
+      type: apiKey
+      in: query
+      name: password
+  schemas:
+    StatisticsReport:
+      type: object
+      description: Report for one country
+      required:
+        - total_messages
+        - total_price
+        - country
+      properties:
+        total_messages:
+          type: integer
+          description: Sum of all messages
+        total_price:
+          type: string
+          description: Price for all messages
+        country:
+          type: string
+          description: Target country of all messages
+    StatisticsReportSuccess:
+      type: object
+      description: A container for statistics reports
+      required:
+        - reports
+      properties:
+        reports:
+          type: array
+          description: Array of report objects
+          items:
+            $ref: '#/components/schemas/StatisticsReport'
+    StatisticsReportSettings:
+      type: object
+      description: A container for statistics report settings
+      required:
+        - start_date
+        - end_date
+      properties:
+        start_date:
+          type: string
+          description: Start date for the report
+          format: date
+        end_date:
+          type: string
+          description: End date for the report
+          format: date
+        message_types:
+          type: array
+          description: 'Optional list of message types (sms, viber, whatsapp, hlr, telegram)'
+          items:
+            type: string
+    ErrorStatistics:
+      required:
+        - errors
+      description: A container for errors
+      properties:
+        errors:
+          type: array
+          description: An array of errors
+          items:
+            $ref: '#/components/schemas/ErrorItemStatistics'
+    ErrorItemStatistics:
+      type: object
+      description: Error fields container
+      required:
+        - title
+        - code
+        - details
+      properties:
+        title:
+          type: string
+          description: Error title
+        details:
+          type: string
+          description: Error details
+        code:
+          $ref: '#/components/schemas/ErrorCodeStatistics'
+    ErrorCodeStatistics:
+      type: string
+      description: |-
+        Matches the following error title.
+          This field is a constant
+
+        * 100 - Client Error
+        * 103 - Unauthorized
+        * 104 - Invalid data
+        * 105 - Internal Server Error
+      enum:
+        - '100'
+        - '103'
+        - '104'
+        - '105'
+    MobileNetwork:
+      type: object
+      nullable: true
+      description: Info about the network related to the phone number
+      properties:
+        mccmnc:
+          type: string
+          description: Mobile country and mobile network code
+        networkName:
+          type: string
+          description: Mobile network name
+        countryName:
+          type: string
+          description: Country name
+        countryPrefix:
+          type: string
+          description: Country prefix
+        countryCode:
+          type: string
+          description: Country code
+    SyncNumberLookupResult:
+      type: object
+      description: Info about a phone number
+      required:
+        - number
+      properties:
+        number:
+          type: string
+          description: Phone number in e.164 format
+        roaming:
+          type: boolean
+          description: Indicates if a number is roaming
+          nullable: true
+        ported:
+          type: boolean
+          description: Indicates if a number is ported
+          nullable: true
+        roamingNetwork:
+          $ref: '#/components/schemas/MobileNetwork'
+        currentNetwork:
+          $ref: '#/components/schemas/MobileNetwork'
+        originalNetwork:
+          $ref: '#/components/schemas/MobileNetwork'
+        portedNetwork:
+          $ref: '#/components/schemas/MobileNetwork'
+        status:
+          type: string
+          description: Status of the phone number
+          enum:
+            - 'ON'
+            - 'OFF'
+            - INVALID
+            - UNKNOWN
+        error:
+          description: Indicates if any error occurred while handling the request
+    SyncNumberLookupSuccess:
+      type: object
+      description: A container for number lookup response
+      required:
+        - request_id
+        - result
+      properties:
+        request_id:
+          type: string
+          description: ID of the request
+        result:
+          type: array
+          description: A container for phone number info objects
+          items:
+            $ref: '#/components/schemas/SyncNumberLookupResult'
+    NumbersToInvestigate:
+      type: object
+      description: A container for phone numbers
+      required:
+        - numbers
+      properties:
+        numbers:
+          type: array
+          description: A list of phone numbers. Max 10 numbers per request
+          items:
+            type: string
+          minItems: 1
+          maxItems: 10
+    ErrorNumberLookup:
+      required:
+        - errors
+      description: A container for errors
+      properties:
+        errors:
+          type: array
+          description: An array of errors
+          items:
+            $ref: '#/components/schemas/ErrorItemNumberLookup'
+    ErrorItemNumberLookup:
+      type: object
+      description: A container for Number Lookup API error
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          description: Error fields container
+          required:
+            - description
+            - code
+          properties:
+            description:
+              type: string
+              description: Error description
+            code:
+              $ref: '#/components/schemas/ErrorCodeNumberLookup'
+    ErrorCodeNumberLookup:
+      type: integer
+      description: |-
+        Matches the following error title.
+          This field is a constant
+
+        * 101 - Unauthorized
+        * 102 - Invalid arguments or parameters
+        * 103 - Server error
+        * 104 - Crediting error #1
+        * 105 - Crediting error #2
+        * 106 - Client error
+      minimum: 101
+      maximum: 106
+    FetchBlacklistSuccess:
+      type: object
+      description: A container for blacklisted numbers
+      properties:
+        phoneNumbers:
+          type: array
+          description: Array of unique phone numbers
+          uniqueItems: true
+          items:
+            type: string
+    NumberToBlacklist:
+      type: object
+      description: A container for a soon-to-be blacklisted number
+      required:
+        - phoneNumber
+      properties:
+        phoneNumber:
+          type: string
+          description: Phone number in e.164 format
+    GroupName:
+      type: object
+      description: A group name container
+      required:
+        - name
+      properties:
+        name:
+          description: The name of the group
+          type: string
+          minLength: 1
+    GroupResponseFields:
+      type: object
+      description: A container for fields of a group
+      required:
+        - id
+        - name
+        - contactsCount
+      properties:
+        id:
+          description: Id string in UUID format
+          type: string
+        name:
+          description: The name of the group
+          type: string
+        createdOn:
+          description: When the group was created
+          type: string
+          format: '%Y-%m-%dT%H:%M:%S.%fZ'
+          nullable: true
+        contactsCount:
+          description: The count of contacts in the group
+          type: integer
+    ContactFields:
+      type: object
+      description: A container for fields of a request body of a contact
+      required:
+        - phoneNumber
+      properties:
+        phoneNumber:
+          type: string
+          description: Phone number in e.164 format
+        email:
+          description: The email of the contact
+          type: string
+          nullable: true
+        firstName:
+          description: The first name of the contact
+          type: string
+          nullable: true
+        lastName:
+          description: The last name of the contact
+          type: string
+          nullable: true
+        company:
+          description: The company of the contact
+          type: string
+          nullable: true
+        title:
+          description: The title of the contact
+          type: string
+          nullable: true
+        custom:
+          description: The first custom field
+          type: string
+          nullable: true
+        custom2:
+          description: The second custom field
+          type: string
+          nullable: true
+        custom3:
+          description: The third custom field
+          type: string
+          nullable: true
+        custom4:
+          description: The fourth custom field
+          type: string
+          nullable: true
+    ContactResponseFields:
+      type: object
+      description: A container for response fields of a contact
+      properties:
+        phoneNumber:
+          type: string
+          description: Phone number in e.164 format
+        email:
+          description: The email of the contact
+          type: string
+          nullable: true
+        firstName:
+          description: The first name of the contact
+          type: string
+          nullable: true
+        lastName:
+          description: The last name of the contact
+          type: string
+          nullable: true
+        company:
+          description: The company of the contact
+          type: string
+          nullable: true
+        title:
+          description: The title of the contact
+          type: string
+          nullable: true
+        custom:
+          description: The first custom field
+          type: string
+          nullable: true
+        custom2:
+          description: The second custom field
+          type: string
+          nullable: true
+        custom3:
+          description: The third custom field
+          type: string
+          nullable: true
+        custom4:
+          description: The fourth custom field
+          type: string
+          nullable: true
+        scheduledDeletionDate:
+          description: |-
+            The date in ISO 8601 format, YYYY-MM-DD,
+             on which the contact is going to be deleted
+             because it has not belonged to a group for 30 days
+          format: date
+          type: string
+          nullable: true
+    ContactUpdateFields:
+      type: object
+      description: A container for fields of a contact
+      minProperties: 1
+      properties:
+        email:
+          description: The email of the contact
+          type: string
+          nullable: true
+        firstName:
+          description: The first name of the contact
+          type: string
+          nullable: true
+        lastName:
+          description: The last name of the contact
+          type: string
+          nullable: true
+        company:
+          description: The company of the contact
+          type: string
+          nullable: true
+        title:
+          description: The title of the contact
+          type: string
+          nullable: true
+        custom:
+          description: The first custom field
+          type: string
+          nullable: true
+        custom2:
+          description: The second custom field
+          type: string
+          nullable: true
+        custom3:
+          description: The third custom field
+          type: string
+          nullable: true
+        custom4:
+          description: The fourth custom field
+          type: string
+          nullable: true
+    GroupListEnvelope:
+      type: object
+      description: A container for groups
+      properties:
+        groups:
+          type: array
+          description: An array of groups
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/GroupResponseFields'
+    GroupEnvelope:
+      type: object
+      description: A container for a group
+      properties:
+        group:
+          $ref: '#/components/schemas/GroupResponseFields'
+    ContactListEnvelope:
+      type: object
+      description: A container for contacts
+      properties:
+        contacts:
+          type: array
+          description: An array of contacts
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/ContactResponseFields'
+    ContactEnvelope:
+      type: object
+      description: A container for a contact
+      properties:
+        contact:
+          $ref: '#/components/schemas/ContactResponseFields'
+    EmptyObject:
+      type: object
+      description: An object containing no properties
+    ErrorCodePhonebook:
+      type: string
+      description: |-
+        Matches the following error title.
+          This field is a constant
+
+          * 201 - Invalid data
+          * 202 - Unauthorized
+          * 203 - Missing resource
+          * 204 - Conflict
+          * 244 - Client error
+          * 205 - General error
+      enum:
+        - '201'
+        - '202'
+        - '203'
+        - '204'
+        - '244'
+        - '205'
+    ErrorTitlePhonebook:
+      type: string
+      description: Textual value which corresponds to an error code
+      enum:
+        - Invalid data
+        - Unauthorized
+        - Missing resource
+        - Conflict
+        - Client error
+        - General error
+    ErrorPhonebook:
+      required:
+        - errors
+      description: A container for errors
+      properties:
+        errors:
+          type: array
+          description: An array of errors
+          items:
+            $ref: '#/components/schemas/ErrorItemPhonebook'
+    ErrorItemPhonebook:
+      type: object
+      description: A container for Phonebook API error
+      required:
+        - title
+        - detail
+        - code
+      properties:
+        title:
+          $ref: '#/components/schemas/ErrorTitlePhonebook'
+        detail:
+          description: Free form more detailed description of the error
+          type: string
+        code:
+          $ref: '#/components/schemas/ErrorCodePhonebook'
+    OmniMessageCreateSuccessResponse:
+      type: object
+      description: >-
+        A container for a response received after successfully created
+        omnimessage
+      required:
+        - messages
+        - to
+        - omnimessage_id
+      properties:
+        messages:
+          type: array
+          description: List of messages that compose the omnimessage
+          items:
+            $ref: '#/components/schemas/MessageResult'
+        to:
+          type: string
+          description: Phone number in e.164 format
+        omnimessage_id:
+          type: string
+          format: UUID
+          description: Unique identifier for the omnimessage
+    MessageResult:
+      type: object
+      description: A message part of an omnimessage
+      required:
+        - message_id
+        - channel
+        - sender
+      properties:
+        message_id:
+          type: string
+          format: UUID
+          description: Unique identifier for the message
+        channel:
+          $ref: '#/components/schemas/Channel'
+        sender:
+          type: string
+          description: Sender that was used for the message
+    Channel:
+      description: Defines the delivery channel
+      type: string
+      enum:
+        - sms
+        - viber
+        - whatsapp
+        - telegram
+    Omnimessage:
+      type: object
+      description: An omnimessage
+      required:
+        - to
+        - messages
+      properties:
+        to:
+          type: string
+          description: Phone number in e.164 format
+        messages:
+          type: array
+          description: An array of messages
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/Viber'
+              - $ref: '#/components/schemas/SMS'
+              - $ref: '#/components/schemas/WhatsApp'
+              - $ref: '#/components/schemas/Telegram'
+        dlr_url:
+          type: string
+          format: url
+          description: URL where the delivery report will be sent
+        text_store:
+          $ref: '#/components/schemas/TextStore'
+        time_to_send:
+          type: string
+          format: date-time
+          description: >-
+            Optional parameter for sending messages at some specific time in the
+            future.
+              Time must be specified in the ISO-8601 format.
+              If no timezone is specified, then the timezone is assumed to be UTC
+
+              Examples:
+
+              * Time specified with timezone: 2018-06-22T09:05:07+00:00 Time specified in UTC: 2018-06-22T09:05:07Z
+              * Time specified without timezone: 2018-06-22T09:05 (equivalent to 2018-06-22T09:05+00:00)
+        priority:
+          $ref: '#/components/schemas/Priority'
+    TextStore:
+      description: >-
+        Whether to store message content as is (plaintext), as a hashed value
+        (sha256) or not at all (nostore)
+      type: string
+      enum:
+        - nostore
+        - plaintext
+        - sha256
+    Priority:
+      description: |-
+        Set the priority of the message.
+          Messages are processed starting with in highest priority queue first and lowest priority queue last.
+          This for example allows to prioritize OTP messages over marketing traffic.
+      type: string
+      enum:
+        - low
+        - regular
+        - high
+    Viber:
+      type: object
+      description: Viber message content
+      properties:
+        sender:
+          type: string
+          description: Phone number or alphanumeric sender name
+        validity:
+          type: integer
+          description: >-
+            After how many minutes this channel is considered as failed and the
+            next channel is attempted.
+                  Only one of "ttl" and "validity" can be used.
+          example: 360
+        ttl:
+          type: integer
+          description: >-
+            After how many seconds this channel is considered as failed and the
+            next channel is attempted.
+                  Only one of "ttl" and "validity" can be used.
+          example: 21600
+        text:
+          type: string
+          description: Plaintext content for Viber
+        image_url:
+          type: string
+          description: |-
+            URL for the embedded image
+
+              Valid combinations:
+
+              1) image_url,
+
+              2) text, image_url, button_url, button_text
+        button_url:
+          type: string
+          description: >-
+            URL of the button, must be specified along with ''text'',
+            ''button_text'' and ''image_url'' (optional)
+        button_text:
+          type: string
+          description: >-
+            Must be specified along with ''text'', ''button_url'',
+            ''button_text'', ''image_url'' (optional)
+        channel:
+          type: string
+          description: The channel used to deliver the message
+          default: viber
+          enum:
+            - viber
+        video:
+          $ref: '#/components/schemas/ViberVideo'
+    ViberVideo:
+      type: object
+      description: Viber video object
+      required:
+        - url
+        - thumbnail
+        - file_size
+        - duration
+      properties:
+        url:
+          type: string
+          description: URL pointing to the video resource.
+        thumbnail:
+          type: string
+          description: URL pointing to the video thumbnail resource.
+        file_size:
+          type: integer
+          description: Size of the video file in bytes. Cannot be larger than 200MB.
+        duration:
+          type: integer
+          description: Duration of the video in seconds. Cannot be longer than 600 seconds.
+    WhatsApp:
+      type: object
+      description: |-
+        WhatsApp message content.
+          Only one of "text", "image", "document" or "audio" can be provided
+      properties:
+        sender:
+          type: string
+          description: Phone number or alphanumeric sender name
+        validity:
+          type: integer
+          description: |-
+            After how many minutes this channel is
+              considered as failed and the next channel is attempted
+          example: 360
+        ttl:
+          type: integer
+          description: >-
+            After how many seconds this channel is considered as failed and the
+            next channel is attempted.
+                  Only one of "ttl" and "validity" can be used.
+          example: 21600
+        template:
+          $ref: '#/components/schemas/WhatsAppTemplate'
+        text:
+          $ref: '#/components/schemas/WhatsAppText'
+        channel:
+          type: string
+          description: The channel used to deliver the message
+          default: whatsapp
+          enum:
+            - whatsapp
+    Telegram:
+      type: object
+      description: Telegram message content
+      properties:
+        sender:
+          type: string
+          description: Phone number or alphanumeric sender name
+        validity:
+          type: integer
+          description: >-
+            After how many minutes this channel is considered as failed and the
+            next channel is attempted
+          example: 360
+        text:
+          type: string
+          description: Plaintext content for Telegram
+        image_url:
+          type: string
+          description: >-
+            URL for the embedded image. Mutually exclusive with "document_url"
+            and "audio_url"
+        document_url:
+          type: string
+          description: >-
+            URL for the embedded image. Mutually exclusive with "audio_url" and
+            "image_url"
+        audio_url:
+          type: string
+          description: >-
+            URL for the embedded image. Mutually exclusive with "document_url"
+            and "image_url"
+        channel:
+          type: string
+          description: The channel used to deliver the message
+          default: telegram
+          enum:
+            - telegram
+    SMS:
+      type: object
+      description: SMS message content
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          description: Text content of the SMS
+          example: Hello world!
+        sender:
+          type: string
+          description: Phone number or alphanumeric sender name
+        validity:
+          type: integer
+          description: >-
+            After how many minutes this channel is considered as failed and the
+            next channel is attempted.
+                                Only one of "ttl" and "validity" can be used.
+          example: 360
+        ttl:
+          type: integer
+          description: >-
+            After how many seconds this channel is considered as failed and the
+            next channel is attempted.
+                                Only one of "ttl" and "validity" can be used.
+          example: 21600
+        autoconvert:
+          type: string
+          enum:
+            - full
+            - 'on'
+            - 'off'
+          description: |-
+            Defines how non-GSM characters will be treated:
+
+              - "on" Use replacement settings from the account's [API Auto Replace settings page](https://dashboard.messente.com/api-settings/auto-replace) (default)
+              - "full" All non GSM 03.38 characters will be replaced with suitable alternatives
+              - "off" Message content is not modified in any way
+        udh:
+          type: string
+          description: hex-encoded string containing SMS UDH
+        channel:
+          type: string
+          description: The channel used to deliver the message
+          default: sms
+          enum:
+            - sms
+    WhatsAppCurrency:
+      type: object
+      required:
+        - fallback_value
+        - code
+        - amount_1000
+      description: Whatsapp currency object.
+      properties:
+        fallback_value:
+          type: string
+          description: Default text if localization fails.
+        code:
+          type: string
+          description: Currency code as defined in ISO 4217.
+        amount_1000:
+          type: string
+          description: Amount multiplied by 1000.
+    WhatsAppTemplate:
+      type: object
+      description: Whatsapp Cloud API template
+      required:
+        - name
+        - language
+        - components
+      properties:
+        name:
+          type: string
+          description: Name of the template
+        language:
+          $ref: '#/components/schemas/WhatsAppLanguage'
+        components:
+          type: array
+          description: List of template components
+          items:
+            $ref: '#/components/schemas/WhatsAppComponent'
+    WhatsAppLanguage:
+      type: object
+      required:
+        - code
+      description: Whatsapp template language
+      properties:
+        code:
+          type: string
+          description: Language code
+        policy:
+          type: string
+          description: Language policy
+    WhatsAppComponent:
+      type: object
+      description: Whatsapp template component
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          description: Type of the component
+        sub_type:
+          type: string
+          description: Sub-type of the component
+        index:
+          type: integer
+          description: index used to position buttons
+        parameters:
+          type: array
+          description: List of parameters for the component
+          items:
+            $ref: '#/components/schemas/WhatsAppParameter'
+    WhatsAppDatetime:
+      type: object
+      description: Whatsapp datetime object.
+      required:
+        - fallback_value
+      properties:
+        fallback_value:
+          type: string
+          description: Default text.
+    WhatsAppMedia:
+      type: object
+      description: Whatsapp media object.
+      properties:
+        id:
+          type: string
+          description: >-
+            The media object ID. Do not use this field when message type is set
+            to text.
+        link:
+          type: string
+          description: >-
+            The protocol and URL of the media to be sent. Use only with
+            HTTP/HTTPS URLs.
+                  Do not use this field when message type is set to text.
+        caption:
+          type: string
+          description: Media asset caption. Do not use with audio or sticker media.
+        filename:
+          type: string
+          description: >-
+            Describes the filename for the specific document. Use only with
+            document media.
+    WhatsAppParameter:
+      type: object
+      description: Whatsapp component parameter.
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          description: Type of the parameter.
+        text:
+          type: string
+          description: A text.
+        currency:
+          $ref: '#/components/schemas/WhatsAppCurrency'
+        date_time:
+          $ref: '#/components/schemas/WhatsAppDatetime'
+        image:
+          $ref: '#/components/schemas/WhatsAppMedia'
+        document:
+          $ref: '#/components/schemas/WhatsAppMedia'
+        video:
+          $ref: '#/components/schemas/WhatsAppMedia'
+        coupon_code:
+          type: string
+          description: A coupon code.
+        payload:
+          type: string
+          description: A payload.
+    WhatsAppText:
+      type: object
+      description: A text
+      required:
+        - body
+      properties:
+        preview_url:
+          type: boolean
+          default: true
+          description: Whether to display link preview if the message contains a hyperlink
+        body:
+          type: string
+          description: >-
+            Plaintext content for WhatsApp, can contain URLs, emojis and
+            formatting
+    ErrorCodeOmnichannel:
+      type: string
+      description: |-
+        Matches the following error title.
+          This field is a constant
+
+          * 101 - Not found
+          * 102 - Forbidden
+          * 103 - Unauthorized
+          * 104 - Internal Server Error
+          * 105 - Invalid data
+          * 106 - Missing data
+          * 107 - Method not allowed
+      enum:
+        - '101'
+        - '102'
+        - '103'
+        - '104'
+        - '105'
+        - '106'
+        - '107'
+    ErrorTitleOmnichannel:
+      type: string
+      description: Textual value which corresponds to an error code
+      enum:
+        - Not found
+        - Forbidden
+        - Unauthorized
+        - Invalid data
+        - Internal Server Error
+        - Missing data
+        - Method not allowed
+    ErrorOmnichannel:
+      required:
+        - errors
+      description: A container for errors
+      properties:
+        errors:
+          type: array
+          description: An array of errors
+          items:
+            $ref: '#/components/schemas/ErrorItemOmnichannel'
+    ErrorItemOmnichannel:
+      type: object
+      description: A container for Omnichannel API error
+      required:
+        - title
+        - detail
+        - code
+        - source
+      properties:
+        title:
+          $ref: '#/components/schemas/ErrorTitleOmnichannel'
+        detail:
+          description: Free form more detailed description of the error
+          type: string
+        code:
+          $ref: '#/components/schemas/ErrorCodeOmnichannel'
+        source:
+          type: string
+          description: >-
+            Describes which field is causing the issue in the payload, null for
+            non 400 status code responses
+          nullable: true
+    DeliveryReportResponse:
+      type: object
+      description: A container for successful delivery report response
+      required:
+        - statuses
+        - to
+        - omnimessage_id
+      properties:
+        statuses:
+          type: array
+          description: >-
+            Contains the delivery reports for each channel, ordered by send
+            order
+          items:
+            $ref: '#/components/schemas/DeliveryResult'
+        to:
+          type: string
+          description: Phone number in e.164 format
+        omnimessage_id:
+          type: string
+          format: UUID
+          description: Unique identifier for the omnimessage
+    DeliveryResult:
+      type: object
+      description: A delivery report
+      properties:
+        status:
+          $ref: '#/components/schemas/Status'
+        channel:
+          $ref: '#/components/schemas/Channel'
+        message_id:
+          type: string
+          format: UUID
+          description: Unique identifier for the message
+        error:
+          type: string
+          description: >-
+            Human-readable description of what went wrong, *null* in case of
+            success or if the message has not been processed yet
+          nullable: true
+        err:
+          $ref: '#/components/schemas/ErrorCodeOmnichannelMachine'
+        timestamp:
+          type: string
+          format: date-time
+          description: When this status was received by Omnichannel API
+        price_info:
+          $ref: '#/components/schemas/PriceInfo'
+        sender:
+          type: string
+          description: the sender of the message
+    PriceInfo:
+      type: object
+      description: >-
+        Contains price information for the message. This value is *null* if the
+        message is still being processed
+      required:
+        - part_price
+        - parts_count
+        - total_price
+      properties:
+        part_price:
+          type: string
+          description: price per message part - relevant mostly for SMS
+        parts_count:
+          type: integer
+          description: the number of parts the message consists of
+        total_price:
+          type: string
+          description: total price for the message
+    Status:
+      type: string
+      description: |-
+        The human-readable equivalent for this field is contained in "error".
+          This value is *null* if the message is still being processed
+      enum:
+        - ACK
+        - DELIVRD
+        - UNDELIV
+        - FAILED
+        - UNKNOWN
+        - ACCEPTD
+        - REJECTD
+        - DELETED
+        - EXPIRED
+        - NACK
+        - SEEN
+    ErrorCodeOmnichannelMachine:
+      type: integer
+      description: >-
+        Machine-readable error code, 'null' when the message has not been
+        processed yet
+
+
+        Matches the following meanings
+
+          * 0 - No error
+          * 1 - Delivery failure
+          * 2 - Sending message expired
+          * 3 - Invalid number
+          * 4 - Error crediting account
+          * 5 - Invalid number format
+          * 6 - Too many identical messages
+          * 7 - Sender name not allowed
+          * 8 - Operator blacklisted
+          * 9 - Unroutable
+          * 10 - Seen
+          * 999 - General temporary error
+      enum:
+        - 0
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - 6
+        - 7
+        - 8
+        - 9
+        - 10
+        - 999
+    WhatsappListTemplatesResponse:
+      type: object
+      description: Whatsapp Cloud API list of templates response
+      required:
+        - templates
+        - paging
+      properties:
+        templates:
+          type: array
+          description: List of templates
+          items:
+            $ref: '#/components/schemas/WhatsappTemplateResponse'
+        paging:
+          $ref: '#/components/schemas/WhatsappPagination'
+    WhatsappTemplateResponse:
+      type: object
+      description: Whatsapp Cloud API template
+      required:
+        - id
+        - components
+        - language
+        - name
+        - category
+        - status
+      properties:
+        id:
+          type: string
+          description: Template ID
+        components:
+          type: array
+          description: List of template components
+          items:
+            $ref: '#/components/schemas/WhatsappTemplateComponent'
+        language:
+          type: string
+          description: Language of the template
+        name:
+          type: string
+          description: Name of the template
+        category:
+          $ref: '#/components/schemas/WhatsappTemplateCategory'
+        status:
+          $ref: '#/components/schemas/WhatsappTemplateStatus'
+    WhatsappPagination:
+      type: object
+      description: Whatsapp media object.
+      required:
+        - cursors
+      properties:
+        previous:
+          type: string
+          description: A URL to ge the previous paginated page.
+        next:
+          type: string
+          description: A URL to ge the next paginated page.
+        cursors:
+          $ref: '#/components/schemas/WhatsappPagingCursors'
+    WhatsappPagingCursors:
+      type: object
+      description: WhatsApp paging cursors object.
+      properties:
+        before:
+          type: string
+          description: The template before the first template in the current list
+        after:
+          type: string
+          description: The template after the last template in the current list
+    WhatsappUpdateTemplateRequest:
+      type: object
+      description: Request to create a WhatsApp template
+      properties:
+        category:
+          $ref: '#/components/schemas/WhatsappTemplateCategory'
+        components:
+          type: array
+          description: List of template components
+          items:
+            $ref: '#/components/schemas/WhatsappTemplateComponent'
+      anyOf:
+        - required:
+            - category
+        - required:
+            - components
+    WhatsappCreateTemplateRequest:
+      type: object
+      description: Request to create a WhatsApp template
+      required:
+        - name
+        - category
+        - language
+        - components
+      properties:
+        name:
+          type: string
+          description: Name of the template
+        category:
+          $ref: '#/components/schemas/WhatsappTemplateCategory'
+        language:
+          type: string
+          description: Language of the template
+        components:
+          type: array
+          description: List of template components
+          items:
+            $ref: '#/components/schemas/WhatsappTemplateComponent'
+    WhatsappCreateTemplateResponse:
+      type: object
+      required:
+        - id
+        - status
+        - category
+      description: Response for creating a WhatsApp template
+      properties:
+        id:
+          type: string
+          description: Template ID
+        status:
+          $ref: '#/components/schemas/WhatsappTemplateStatus'
+        category:
+          $ref: '#/components/schemas/WhatsappTemplateCategory'
+    WhatsappTemplateStatus:
+      type: string
+      description: Template status
+      enum:
+        - approved
+        - in_appeal
+        - rejected
+        - pending
+        - pending_deletion
+        - deleted
+        - disabled
+        - paused
+        - limit_exceeded
+      example: approved
+    WhatsappTemplateCategory:
+      type: string
+      description: Template category
+      enum:
+        - authentication
+        - marketing
+        - utility
+      example: utility
+    WhatsappTemplateComponent:
+      type: object
+      description: Template component object
+      properties:
+        type:
+          $ref: '#/components/schemas/WhatsappComponentType'
+        format:
+          $ref: '#/components/schemas/WhatsappHeaderFormat'
+        text:
+          type: string
+          description: Text content of the component
+        example:
+          $ref: '#/components/schemas/WhatsappTemplateExample'
+        buttons:
+          type: array
+          description: List of buttons for the component
+          items:
+            $ref: '#/components/schemas/WhatsappTemplateButton'
+    WhatsappComponentType:
+      type: string
+      description: Type of the component
+      enum:
+        - body
+        - header
+        - footer
+        - buttons
+    WhatsappHeaderFormat:
+      type: string
+      enum:
+        - text
+      description: Format of the header component
+    WhatsappTemplateExample:
+      type: object
+      description: Example of the templated content
+      properties:
+        header_text:
+          type: array
+          description: Example of the templated text for the header
+          items:
+            type: string
+        body_text:
+          type: array
+          description: Example of the templated text for the body
+          items:
+            type: array
+            items:
+              type: string
+    WhatsappTemplateButton:
+      type: object
+      description: Whatsapp button object.
+      properties:
+        type:
+          $ref: '#/components/schemas/WhatsappButtonType'
+        otp_type:
+          $ref: '#/components/schemas/WhatsappOtpButtonType'
+        autofill_text:
+          type: string
+          description: Text to be autofilled in the OTP field
+        supported_apps:
+          type: array
+          description: List of supported apps for the button
+          items:
+            $ref: '#/components/schemas/WhatsappSupportedApp'
+        text:
+          type: string
+          description: Text content of the button
+          maxLength: 25
+        phone_number:
+          type: string
+          description: Phone number for the button
+          maxLength: 20
+        url:
+          type: string
+          description: URL for the button
+          maxLength: 2000
+    WhatsappButtonType:
+      type: string
+      description: Type of the button
+      enum:
+        - quick_reply
+        - phone_number
+        - otp
+        - url
+        - catalog
+        - flow
+        - copy_code
+    WhatsappOtpButtonType:
+      type: string
+      description: Type of the OTP button
+      enum:
+        - copy_code
+        - one_tap
+        - zero_tap
+    WhatsappSupportedApp:
+      type: object
+      description: Supported app for the button
+      required:
+        - package_name
+        - signature_hash
+      properties:
+        package_name:
+          type: string
+          description: Package name
+        signature_hash:
+          type: string
+          description: Signature hash
+    AnyJsonResponse:
+      type: object
+      description: Any valid JSON response
+      additionalProperties: true
+    BulkOmnimessage:
+      type: object
+      description: A bulk omnimessage.
+      required:
+        - messages
+      properties:
+        messages:
+          type: array
+          description: A list of omnimessages.
+          items:
+            $ref: '#/components/schemas/Omnimessage'
+    BulkOmniMessageCreateSuccessResponse:
+      type: object
+      description: Response received after successfully created bulk omnimessage.
+      required:
+        - messages
+      properties:
+        messages:
+          type: array
+          description: >-
+            List of responses for each Omnimessage in the bulk. These can be
+            errors or successful responses
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/OmniMessageCreateSuccessResponse'
+              - $ref: '#/components/schemas/ErrorOmnichannel'
+paths:
+  /get_balance:
+    servers:
+      - url: 'https://api2.messente.com'
+        description: Override base path for account balance API
+    parameters:
+      - schema:
+          type: string
+        name: username
+        in: query
+        required: true
+        description: The API username
+      - schema:
+          type: string
+        name: password
+        in: query
+        required: true
+        description: The API password
+    post:
+      tags:
+        - AccountBalance
+      summary: Get account balance
+      operationId: getAccountBalanceUsingPost
+      security:
+        - apiUsername: []
+          apiPassword: []
+      responses:
+        '200':
+          description: >-
+            Both errors and success responses are returned as plain text with
+            HTTP status 200.
+          content:
+            text/plain:
+              schema:
+                type: string
+                description: |
+                  Syntax for successful response: OK [SMS balance in EUR]
+                  Syntax for unsuccessful response: ERROR [error code]
+                  error codes:
+                    - 101: Access is restricted, wrong credentials. Check username and password values. 
+                    - 102: Parameters are wrong or missing. Check that all required parameters are present.
+                    - 209: Server failure, try again after a few seconds or try api3.messente.com backup server.
+                example: OK 10.23
+    get:
+      tags:
+        - AccountBalance
+      summary: Get account balance
+      operationId: getAccountBalance
+      security:
+        - apiUsername: []
+          apiPassword: []
+      responses:
+        '200':
+          description: >-
+            Both errors and success responses are returned as plain text with
+            HTTP status 200.
+          content:
+            text/plain:
+              schema:
+                type: string
+                description: |
+                  Syntax for successful response: OK [SMS balance in EUR]
+                  Syntax for unsuccessful response: ERROR [error code]
+                  error codes:
+                    - 101: Access is restricted, wrong credentials. Check username and password values. 
+                    - 102: Parameters are wrong or missing. Check that all required parameters are present.
+                    - 209: Server failure, try again after a few seconds or try api3.messente.com backup server.
+                example: OK 10.23
+  /omnimessages:
+    post:
+      tags:
+        - BulkMessaging
+      summary: Sends a bulk Omnimessage
+      operationId: sendBulkOmnimessage
+      responses:
+        '201':
+          description: Bulk Omnimessage success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkOmniMessageCreateSuccessResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkOmnimessage'
+        description: Bulk Omnimessage to be sent
+        required: true
+  /hlr/sync:
+    post:
+      summary: Requests info about phone numbers
+      operationId: fetchInfo
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NumbersToInvestigate'
+            example:
+              numbers:
+                - '+37251000000'
+                - '+37251000001'
+        description: Numbers for lookup
+        required: true
+      responses:
+        '200':
+          description: Info about phone numbers returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncNumberLookupSuccess'
+              example:
+                request_id: d50fbe61-053d-46b1-b452-f64ef38d2247
+                result:
+                  - number: '+37251000000'
+                    roaming: null
+                    roamingNetwork: null
+                    currentNetwork: null
+                    originalNetwork: null
+                    portedNetwork: null
+                    ported: null
+                    status: INVALID
+                  - number: '+37251000001'
+                    roaming: false
+                    roamingNetwork: null
+                    currentNetwork:
+                      countryCode: EST
+                      countryPrefix: '372'
+                      countryName: Estonia
+                      networkName: Any Company
+                      mccmnc: '11111'
+                    originalNetwork:
+                      countryCode: EST
+                      countryPrefix: '372'
+                      countryName: Estonia
+                      networkName: Any Company
+                      mccmnc: '11111'
+                    portedNetwork: null
+                    ported: false
+                    status: 'ON'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorNumberLookup'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorNumberLookup'
+        '402':
+          description: Failed crediting
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorNumberLookup'
+      tags:
+        - Number Lookup
+  /omnimessage:
+    post:
+      tags:
+        - Omnimessage
+      summary: Sends an Omnimessage
+      operationId: sendOmnimessage
+      responses:
+        '201':
+          description: Omnimessage success response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OmniMessageCreateSuccessResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Omnimessage'
+        description: Omnimessage to be sent
+        required: true
+  '/omnimessage/{omnimessageId}/status':
+    parameters:
+      - in: path
+        name: omnimessageId
+        description: >-
+          UUID of the omnimessage to for which the delivery report is to be
+          retrieved
+        required: true
+        schema:
+          type: string
+          format: UUID
+    get:
+      summary: Retrieves the delivery report for the Omnimessage
+      operationId: retrieveDeliveryReport
+      tags:
+        - Delivery Report
+      responses:
+        '200':
+          description: Delivery report success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryReportResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+        '404':
+          description: >-
+            If no such message exists or you do not have access to the
+            particular message
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+  '/omnimessage/{omnimessageId}':
+    parameters:
+      - in: path
+        name: omnimessageId
+        description: UUID of the scheduled omnimessage to be cancelled
+        required: true
+        schema:
+          type: string
+          format: UUID
+    delete:
+      operationId: cancelScheduledMessage
+      tags:
+        - Omnimessage
+      summary: Cancels a scheduled Omnimessage
+      responses:
+        '202':
+          description: Scheduled omnimessage successfully cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyObject'
+              example: {}
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+        '404':
+          description: If the omnimessage has already been sent or no such message exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+  '/whatsapp/wabas/{wabaId}/templates':
+    parameters:
+      - schema:
+          type: string
+        name: wabaId
+        in: path
+        required: true
+        description: The ID of the WABA
+    post:
+      tags:
+        - WhatsAppTemplates
+      summary: Creates a WhatsApp template
+      operationId: createWhatsappTemplate
+      requestBody:
+        required: true
+        description: The WhatsApp template to create
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WhatsappCreateTemplateRequest'
+      responses:
+        '200':
+          description: template creation successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhatsappCreateTemplateResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+    delete:
+      tags:
+        - WhatsAppTemplates
+      summary: Deletes a WhatsApp template
+      operationId: deleteWhatsappTemplate
+      parameters:
+        - schema:
+            type: string
+          name: name
+          in: query
+          required: true
+          description: The name of the template to delete
+          example: template_name
+        - schema:
+            type: string
+          name: hsmId
+          in: query
+          description: The ID of the template to delete
+          example: '1'
+      responses:
+        '200':
+          description: template deletion successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnyJsonResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+    get:
+      tags:
+        - WhatsAppTemplates
+      summary: Requests a list of WhatsApp templates
+      operationId: listWhatsappTemplates
+      parameters:
+        - schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 25
+            example: 10
+          in: query
+          name: limit
+          description: >-
+            The number of templates to return in the list. Although the max size
+            is 500, for large datasets it is recommended to use a lower limit
+            and instead use pagination to avoid potential timeouts. Defaults to
+            25.
+        - schema:
+            type: string
+            example: MAZDZD
+          in: query
+          name: before
+          description: >-
+            A cursor point used for a paginated request to indicate the template
+            to paginate backwards from.
+        - schema:
+            type: string
+            example: MjQZD
+          in: query
+          name: after
+          description: >-
+            A cursor point used for a paginated request to indicate the template
+            to paginate forwards from.
+        - schema:
+            $ref: '#/components/schemas/WhatsappTemplateCategory'
+          in: query
+          name: category
+          description: A filter for returning only templates matching a specific category.
+        - schema:
+            type: string
+            example: special offer
+          in: query
+          name: content
+          description: >-
+            A search filter representing the content of a template. Only
+            matching templates will be returned in the list.
+        - schema:
+            type: string
+            example: en
+          in: query
+          name: language
+          description: >-
+            A filter  for returning only templates matching a specific language
+            code. A list of supported languages is available in the [WhatsApp
+            documentation](https://developers.facebook.com/docs/whatsapp/api/messages/message-templates/) 
+        - schema:
+            type: string
+            example: Sample Template
+          in: query
+          name: name
+          description: >-
+            A search filter representing the name, either full or partial, of a
+            template. Only matching templates will be returned in the list.
+        - schema:
+            $ref: '#/components/schemas/WhatsappTemplateStatus'
+          in: query
+          name: status
+          description: A filter for returning only templates matching a specific status.
+      responses:
+        '200':
+          description: template list fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhatsappListTemplatesResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+  '/whatsapp/wabas/{wabaId}/templates/{templateId}':
+    parameters:
+      - schema:
+          type: string
+        name: wabaId
+        in: path
+        required: true
+        description: The ID of the WABA
+    get:
+      tags:
+        - WhatsAppTemplates
+      summary: Requests a WhatsApp template with the given ID
+      operationId: getWhatsappTemplateById
+      parameters:
+        - schema:
+            type: string
+          name: templateId
+          in: path
+          required: true
+          description: The ID of the template to retrieve
+      responses:
+        '200':
+          description: template fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhatsappTemplateResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+    put:
+      tags:
+        - WhatsAppTemplates
+      summary: Updates a WhatsApp template
+      operationId: updateWhatsappTemplate
+      parameters:
+        - schema:
+            type: string
+          name: templateId
+          in: path
+          required: true
+          description: The ID of the template to update
+      requestBody:
+        required: true
+        description: The template data to be updated
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WhatsappUpdateTemplateRequest'
+      responses:
+        '200':
+          description: template update successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnyJsonResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorOmnichannel'
+  /phonebook/blacklist:
+    get:
+      summary: Returns all blacklisted phone numbers
+      operationId: fetchBlacklist
+      responses:
+        '200':
+          description: An object containing a list of blacklisted phone numbers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FetchBlacklistSuccess'
+              example:
+                phoneNumbers:
+                  - '+37251000000'
+                  - '+37251000001'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        default:
+          description: General error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+      tags:
+        - Blacklist
+    post:
+      summary: Adds a phone number to the blacklist
+      operationId: addToBlacklist
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NumberToBlacklist'
+            example:
+              phoneNumber: '+37251000000'
+        description: Phone number to be blacklisted
+        required: true
+      responses:
+        '204':
+          description: Phone number added to the blacklist
+        '400':
+          description: Invalid phone number provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '409':
+          description: Phone number already blacklisted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        default:
+          description: General error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+      tags:
+        - Blacklist
+  '/phonebook/blacklist/{phone}':
+    parameters:
+      - name: phone
+        in: path
+        required: true
+        description: A phone number
+        schema:
+          type: string
+        example: '+37251000000'
+    get:
+      summary: Checks if a phone number is blacklisted
+      operationId: isBlacklisted
+      responses:
+        '204':
+          description: Phone number is in the blacklist
+        '400':
+          description: Invalid phone number provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '404':
+          description: Phone number is not in the blacklist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+      tags:
+        - Blacklist
+    delete:
+      summary: Deletes a phone number from the blacklist
+      operationId: deleteFromBlacklist
+      responses:
+        '204':
+          description: Phone number deleted from the blacklist
+        '400':
+          description: Invalid phone number provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '404':
+          description: Phone number is not in the blacklist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        default:
+          description: General error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+      tags:
+        - Blacklist
+  '/phonebook/contacts/{phone}':
+    parameters:
+      - name: phone
+        description: A phone number
+        in: path
+        required: true
+        schema:
+          type: string
+        example: '+37251000000'
+    get:
+      summary: Lists a contact
+      operationId: fetchContact
+      responses:
+        '200':
+          description: An object containing a contact object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactEnvelope'
+              example:
+                contact:
+                  phoneNumber: '+37251000000'
+                  email: anyone@messente.com
+                  firstName: Any
+                  lastName: One
+                  company: Messente
+                  title: Sir
+                  custom: Any custom
+                  custom2: Any custom two
+                  custom3: Any custom three
+                  custom4: Any custom four
+                  scheduledDeletionDate: 2020-08-31
+        '400':
+          description: Invalid phone number provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '404':
+          description: Contact missing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+      tags:
+        - Contacts
+    delete:
+      summary: Deletes a contact
+      operationId: deleteContact
+      responses:
+        '204':
+          description: Contact deleted
+        '400':
+          description: Invalid phone number provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '404':
+          description: Contact missing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        default:
+          description: General error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+      tags:
+        - Contacts
+    patch:
+      summary: Updates a contact
+      operationId: updateContact
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactUpdateFields'
+            example:
+              email: anyone@messente.com
+              firstName: Any
+              lastName: One
+              company: Messente
+              title: Sir
+              custom: Any custom
+              custom2: Any custom two
+              custom3: Any custom three
+              custom4: Any custom four
+        required: true
+      responses:
+        '200':
+          description: An object containing a contact object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactEnvelope'
+              example:
+                contact:
+                  phoneNumber: '+37251000000'
+                  email: anyone@messente.com
+                  firstName: Any
+                  lastName: One
+                  company: Messente
+                  title: Sir
+                  custom: Any custom
+                  custom2: Any custom two
+                  custom3: Any custom three
+                  custom4: Any custom four
+                  scheduledDeletionDate: 2020-08-31
+        '400':
+          description: Invalid phone number or empty patch body or unknown fields provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '404':
+          description: Contact missing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        default:
+          description: General error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+      tags:
+        - Contacts
+  '/phonebook/contacts/{phone}/groups':
+    parameters:
+      - name: phone
+        description: A phone number
+        in: path
+        required: true
+        schema:
+          type: string
+        example: '+37251000000'
+    get:
+      summary: Lists groups of a contact
+      operationId: fetchContactGroups
+      responses:
+        '200':
+          description: An object containing a list of group objects
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupListEnvelope'
+              example:
+                groups:
+                  - contactsCount: 1
+                    name: Any group name
+                    id: 5792a02a-e5c2-422b-a0a0-0ae65d814663
+                    createdOn: '2019-04-22T11:46:23.753613Z'
+        '400':
+          description: Invalid phone number provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '404':
+          description: Contact missing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+      tags:
+        - Contacts
+  /phonebook/contacts:
+    get:
+      summary: Returns all contacts
+      operationId: fetchContacts
+      parameters:
+        - in: query
+          name: groupIds
+          description: |
+            Optional one or many group id strings in UUID format.
+            For example: "/contacts?groupIds=group_id_one&groupIds=group_id_two"
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+          example:
+            - 5792a02a-e5c2-422b-a0a0-0ae65d814663
+            - 4792a02a-e5c2-422b-a0a0-0ae65d814662
+          style: form
+          explode: true
+      responses:
+        '200':
+          description: An object containing a list of contact objects
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactListEnvelope'
+              example:
+                contacts:
+                  - phoneNumber: '+37251000000'
+                    email: anyone@messente.com
+                    firstName: Any
+                    lastName: One
+                    company: Messente
+                    title: Sir
+                    custom: Any custom
+                    custom2: Any custom two
+                    custom3: Any custom three
+                    custom4: Any custom four
+                    scheduledDeletionDate: 2020-08-31
+        '400':
+          description: Invalid "groupIds" parameters provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        default:
+          description: General error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+      tags:
+        - Contacts
+    post:
+      summary: Creates a new contact
+      operationId: createContact
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactFields'
+            example:
+              phoneNumber: '+37251000000'
+              email: anyone@messente.com
+              firstName: Any
+              lastName: One
+              company: Messente
+              title: Sir
+              custom: Any custom
+              custom2: Any custom two
+              custom3: Any custom three
+              custom4: Any custom four
+        required: true
+      responses:
+        '201':
+          description: An object containing a contact object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactEnvelope'
+              example:
+                contact:
+                  phoneNumber: '+37251000000'
+                  email: anyone@messente.com
+                  firstName: Any
+                  lastName: One
+                  company: Messente
+                  title: Sir
+                  custom: Any custom
+                  custom2: Any custom two
+                  custom3: Any custom three
+                  custom4: Any custom four
+                  scheduledDeletionDate: 2020-08-31
+        '400':
+          description: Invalid phone number provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '409':
+          description: Contact with phone already created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        default:
+          description: General error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+      tags:
+        - Contacts
+  '/phonebook/groups/{groupId}':
+    parameters:
+      - name: groupId
+        description: String in UUID format
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 5792a02a-e5c2-422b-a0a0-0ae65d814663
+    get:
+      summary: Lists a group
+      operationId: fetchGroup
+      responses:
+        '200':
+          description: An object containing a group object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupEnvelope'
+              example:
+                group:
+                  contactsCount: 1
+                  name: Any group name
+                  id: 5792a02a-e5c2-422b-a0a0-0ae65d814663
+                  createdOn: '2019-04-22T11:46:23.753613Z'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '404':
+          description: Missing group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+      tags:
+        - Groups
+    delete:
+      summary: Deletes a group
+      operationId: deleteGroup
+      responses:
+        '204':
+          description: Group deleted
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '404':
+          description: Group missing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        default:
+          description: General error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+      tags:
+        - Groups
+    put:
+      summary: Updates a group with the provided name
+      operationId: updateGroup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupName'
+            example:
+              name: Any group name
+        required: true
+      responses:
+        '200':
+          description: An object containing a group object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupEnvelope'
+              example:
+                group:
+                  contactsCount: 1
+                  name: Any group name
+                  id: 5792a02a-e5c2-422b-a0a0-0ae65d814663
+                  createdOn: '2019-04-22T11:46:23.753613Z'
+        '400':
+          description: Name is invalid string or shorter than length 1
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '404':
+          description: Group missing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        default:
+          description: General error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+      tags:
+        - Groups
+  '/phonebook/groups/{groupId}/contacts/{phone}':
+    parameters:
+      - name: groupId
+        description: String in UUID format
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 5792a02a-e5c2-422b-a0a0-0ae65d814663
+      - name: phone
+        description: A phone number
+        in: path
+        required: true
+        schema:
+          type: string
+        example: '+37251000000'
+    post:
+      summary: Adds a contact to a group
+      operationId: addContactToGroup
+      responses:
+        '201':
+          description: An empty object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmptyObject'
+              example: {}
+        '400':
+          description: Invalid phone number provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '404':
+          description: Contact or group is missing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '409':
+          description: Contact already added to group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        default:
+          description: General error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+      tags:
+        - Contacts
+    delete:
+      summary: Removes a contact from a group
+      operationId: removeContactFromGroup
+      responses:
+        '204':
+          description: Contact removed from group
+        '400':
+          description: Invalid phone number provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '404':
+          description: Contact or group is missing or contact is missing from group
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        default:
+          description: General error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+      tags:
+        - Contacts
+  /phonebook/groups:
+    get:
+      summary: Returns all groups
+      operationId: fetchGroups
+      responses:
+        '200':
+          description: An object containing a list of group objects
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupListEnvelope'
+              example:
+                groups:
+                  - contactsCount: 1
+                    name: Any group name
+                    id: 5792a02a-e5c2-422b-a0a0-0ae65d814663
+                    createdOn: '2019-04-22T11:46:23.753613Z'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        default:
+          description: General error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+      tags:
+        - Groups
+    post:
+      summary: Creates a new group with the provided name
+      operationId: createGroup
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupName'
+            example:
+              name: Any group name
+        required: true
+      responses:
+        '201':
+          description: An object containing a group object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupEnvelope'
+              example:
+                group:
+                  contactsCount: 1
+                  name: Any group name
+                  id: 5792a02a-e5c2-422b-a0a0-0ae65d814663
+                  createdOn: '2019-04-22T11:46:23.753613Z'
+        '400':
+          description: Name is invalid string or shorter than length 1
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+        default:
+          description: General error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorPhonebook'
+      tags:
+        - Groups
+  /statistics/reports:
+    post:
+      summary: Requests statistics reports for each country
+      operationId: createStatisticsReport
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatisticsReportSettings'
+            example:
+              start_date: 2017-01-01
+              end_date: 2019-06-20
+              message_types:
+                - sms
+        description: Settings for statistics report
+        required: true
+      responses:
+        '200':
+          description: Created reports by countries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatisticsReportSuccess'
+              example:
+                reports:
+                  - total_messages: 1483
+                    total_price: '0.00200'
+                    country: Estonia
+                  - total_messages: 1356
+                    total_price: '0.06500'
+                    country: Finland
+                  - total_messages: 1586
+                    total_price: '70.26100'
+                    country: Spain
+        '400':
+          description: Client Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStatistics'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStatistics'
+        '422':
+          description: Invalid data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStatistics'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStatistics'
+      tags:
+        - Statistics
